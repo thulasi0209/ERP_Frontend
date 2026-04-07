@@ -1,40 +1,97 @@
 import React, { useState, useEffect } from 'react'
 import { Building2, Edit, Trash2, Users } from 'lucide-react'
 
-const API_BASE = 'http://127.0.0.1:8000'
+// Get API URL from environment variable with fallback
+const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000'
+
+// Test backend connectivity
+async function testBackendConnectivity() {
+  try {
+    console.log('[Debug] Testing backend connectivity...')
+    const response = await fetch(`${API_URL}/vendors`, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' }
+    })
+    console.log('[Debug] Backend response status:', response.status)
+    if (response.ok) {
+      console.log('[Debug] ✓ Backend is reachable and responding')
+    } else {
+      console.warn('[Debug] ⚠ Backend returned status:', response.status)
+    }
+  } catch (error) {
+    if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
+      console.error('[Debug] ✗ CORS or backend connectivity issue detected!')
+      console.error('[Debug] Possible causes:')
+      console.error('  1. Backend server is down or unreachable')
+      console.error('  2. CORS headers not configured on backend')
+      console.error('  3. Network connectivity issue')
+      console.error('  4. Request blocked by browser security policy')
+    } else {
+      console.error('[Debug] Backend connectivity error:', error.message)
+    }
+  }
+}
 
 function VendorsPage() {
   const [vendors, setVendors] = useState([])
   const [formData, setFormData] = useState({ name: '', phone: '' })
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
 
   useEffect(() => {
+    console.log('[Debug] Frontend Configuration:')
+    console.log('  VITE_API_URL env:', import.meta.env.VITE_API_URL)
+    console.log('  Using API_URL:', API_URL)
+    console.log('  Environment:', import.meta.env.MODE)
+    
+    if (!import.meta.env.VITE_API_URL) {
+      console.warn('[Debug] VITE_API_URL environment variable is not defined. Using fallback.')
+    }
+    
+    testBackendConnectivity()
     loadVendors()
   }, [])
 
   async function fetchJson(url, options = {}) {
     try {
+      console.log(`[Debug] Fetching from: ${url}`)
       const response = await fetch(url, options)
       const text = await response.text()
       const data = text ? JSON.parse(text) : null
 
+      console.log(`[Debug] Response status: ${response.status}`)
+
       if (!response.ok) {
         const errorMessage = data?.detail || data?.message || response.statusText
+        console.error(`[Debug] API error (${response.status}):`, errorMessage)
         throw new Error(errorMessage || 'Server error')
       }
 
+      console.log('[Debug] Request successful')
       return data
     } catch (error) {
+      // Detect CORS and network errors
+      if (error instanceof TypeError) {
+        if (error.message.includes('Failed to fetch')) {
+          const corsHint = `Could not reach ${API_URL}. Check if:\n  • Backend is running\n  • CORS is configured\n  • Network connectivity exists`
+          console.error('[Debug] Network/CORS Error:', corsHint)
+          throw new Error(corsHint)
+        }
+      }
+      console.error('[Debug] Fetch error:', error.message)
       throw new Error(error.message || 'Network error')
     }
   }
 
   async function loadVendors() {
+    setError('')
     try {
-      const data = await fetchJson(`${API_BASE}/vendors`)
+      const data = await fetchJson(`${API_URL}/vendors`)
       setVendors(data)
     } catch (error) {
-      alert(`Unable to load vendors: ${error.message}`)
+      const errorMsg = `Unable to load vendors: ${error.message}`
+      console.error('[Debug]', errorMsg)
+      setError(errorMsg)
     }
   }
 
@@ -48,16 +105,20 @@ function VendorsPage() {
 
     try {
       setLoading(true)
-      await fetchJson(`${API_BASE}/vendors`, {
+      setError('')
+      await fetchJson(`${API_URL}/vendors`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData),
       })
 
+      console.log('[Debug] Vendor created successfully')
       alert('Vendor created successfully.')
       setFormData({ name: '', phone: '' })
       await loadVendors()
     } catch (error) {
+      console.error('[Debug] Create vendor error:', error.message)
+      setError(`Failed to create vendor: ${error.message}`)
       alert(`Failed to create vendor: ${error.message}`)
     } finally {
       setLoading(false)
@@ -68,12 +129,15 @@ function VendorsPage() {
     if (!window.confirm('Are you sure you want to delete this vendor?')) return
 
     try {
-      await fetchJson(`${API_BASE}/vendors/${vendorId}`, {
+      await fetchJson(`${API_URL}/vendors/${vendorId}`, {
         method: 'DELETE',
       })
+      console.log('[Debug] Vendor deleted successfully')
       alert('Vendor deleted successfully.')
       await loadVendors()
     } catch (error) {
+      console.error('[Debug] Delete vendor error:', error.message)
+      setError(`Failed to delete vendor: ${error.message}`)
       alert(`Failed to delete vendor: ${error.message}`)
     }
   }
@@ -86,6 +150,19 @@ function VendorsPage() {
       </div>
 
       <div className="form-content">
+        {error && (
+          <div style={{
+            backgroundColor: '#fee2e2',
+            border: '1px solid #fca5a5',
+            color: '#991b1b',
+            padding: '1rem',
+            borderRadius: '0.5rem',
+            marginBottom: '1rem',
+            fontSize: '0.875rem'
+          }}>
+            <strong>Error:</strong> {error}
+          </div>
+        )}
         <form onSubmit={handleSubmit} className="form-grid">
           <label>
             Name
