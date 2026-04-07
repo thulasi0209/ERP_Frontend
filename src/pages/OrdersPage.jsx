@@ -125,7 +125,13 @@ function OrdersPage() {
       alert('Order marked as received.')
       await loadOrders()
     } catch (error) {
-      alert(`Failed to mark order received: ${error.message}`)
+      // ADDED: Handle "already received" error gracefully
+      if (error.message.includes('already received') || error.message.includes('Already' )) {
+        console.log('[Debug] Order already received, reloading...')
+        await loadOrders() // Refresh to show correct state
+      } else {
+        alert(`Failed to mark order received: ${error.message}`)
+      }
     }
   }
 
@@ -204,17 +210,65 @@ function OrdersPage() {
             <ul className="list">
               {orders.map((order, index) => {
                 const status = order.received ? 'received' : 'pending'
+                // ADDED: Visual styling for received orders
+                const isReceived = order.received
+                
                 return (
-                  <li key={order.id} className="list-item" style={{animationDelay: `${index * 0.05}s`}}>
+                  <li 
+                    key={order.id} 
+                    className="list-item" 
+                    style={{
+                      animationDelay: `${index * 0.05}s`,
+                      // ADDED: Green background tint for received orders
+                      backgroundColor: isReceived ? 'rgba(16, 185, 129, 0.08)' : 'transparent',
+                      borderLeft: isReceived ? '3px solid #10b981' : '3px solid transparent',
+                      transition: 'all 0.3s ease'
+                    }}
+                  >
                     <div className="item-row">
-                      <div>
-                        <div className="item-title">{order.item_name}</div>
-                        <div className="item-meta">
-                          Vendor ID: {order.vendor_id} · Quantity: {order.quantity}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1 }}>
+                        {/* ADDED: Double tick for received orders */}
+                        {isReceived && (
+                          <span style={{
+                            color: '#10b981',
+                            fontWeight: 'bold',
+                            fontSize: '1.2rem'
+                          }} title="Order received">
+                            ✅
+                          </span>
+                        )}
+                        <div>
+                          <div className="item-title" style={{
+                            // ADDED: Text styling for received orders
+                            color: isReceived ? '#cbd5e1' : '#e5e7eb',
+                            textDecoration: isReceived ? 'line-through' : 'none',
+                            opacity: isReceived ? 0.9 : 1
+                          }}>
+                            {order.item_name}
+                          </div>
+                          <div className="item-meta" style={{
+                            color: isReceived ? '#9ca3af' : '#6b7280'
+                          }}>
+                            Vendor ID: {order.vendor_id} · Quantity: {order.quantity} {/* ADDED: Display unit if available */}
+                            {order.unit && ` ${order.unit}`}
+                          </div>
                         </div>
                       </div>
-                      <span className={`badge ${status}`}>
-                        {status === 'received' ? 'Received' : 'Pending'}
+                      {/* ADDED: Enhanced badge styling */}
+                      <span 
+                        className={`badge ${status}`}
+                        style={{
+                          backgroundColor: isReceived ? '#10b981' : '#ef4444',
+                          color: 'white',
+                          padding: '6px 12px',
+                          borderRadius: '6px',
+                          fontSize: '0.875rem',
+                          fontWeight: '600',
+                          transition: 'all 0.3s ease'
+                        }}
+                      >
+                        {/* ADDED: Double check mark for received */}
+                        {isReceived ? '✅ Received' : '⏳ Pending'}
                       </span>
                     </div>
                     <div className="item-row">
@@ -226,6 +280,24 @@ function OrdersPage() {
                         >
                           <Check size={16} />
                           Mark Received
+                        </button>
+                      )}
+                      {/* ADDED: Verify button for already received orders */}
+                      {isReceived && (
+                        <button
+                          style={{
+                            padding: '6px 12px',
+                            fontSize: '0.875rem',
+                            backgroundColor: '#10b981',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '6px',
+                            cursor: 'default',
+                            opacity: 0.7,
+                            fontWeight: '500'
+                          }}
+                        >
+                          ✅ Verified
                         </button>
                       )}
                     </div>
