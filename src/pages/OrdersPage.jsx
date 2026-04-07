@@ -6,7 +6,7 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000'
 
 function OrdersPage() {
   const [orders, setOrders] = useState([])
-  const [formData, setFormData] = useState({ vendor_id: '', item_name: '', quantity: '' })
+  const [formData, setFormData] = useState({ vendor_id: '', item_name: '', quantity: '', unit: 'kg' }) // ADDED: unit field with default 'kg'
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
@@ -107,8 +107,8 @@ function OrdersPage() {
     const vendorId = parseInt(formData.vendor_id, 10)
     const quantity = parseInt(formData.quantity, 10)
 
-    if (!vendorId || !formData.item_name || quantity <= 0) {
-      alert('Please provide vendor ID, item name, and quantity.')
+    if (!vendorId || !formData.item_name || quantity <= 0 || !formData.unit) { // ADDED: validate unit
+      alert('Please provide vendor ID, item name, quantity, and unit.')
       return
     }
 
@@ -120,12 +120,13 @@ function OrdersPage() {
         body: JSON.stringify({
           vendor_id: vendorId,
           item_name: formData.item_name,
-          quantity: quantity
+          quantity: quantity,
+          unit: formData.unit // ADDED: include unit in payload
         }),
       })
 
       alert('Order created successfully.')
-      setFormData({ vendor_id: '', item_name: '', quantity: '' })
+      setFormData({ vendor_id: '', item_name: '', quantity: '', unit: 'kg' }) // ADDED: reset unit to default
       await loadOrders()
     } catch (error) {
       alert(`Failed to create order: ${error.message}`)
@@ -186,6 +187,19 @@ function OrdersPage() {
               onChange={(e) => setFormData({...formData, quantity: e.target.value})}
               required
             />
+          </label>
+          {/* ADDED: Unit selection dropdown */}
+          <label>
+            Unit
+            <select
+              value={formData.unit}
+              onChange={(e) => setFormData({...formData, unit: e.target.value})}
+              required
+            >
+              <option value="kg">kg</option>
+              <option value="liter">liter</option>
+              <option value="pieces">pieces</option>
+            </select>
           </label>
           <button type="submit" className="primary-button" disabled={loading}>
             {loading ? 'Creating...' : '+ Create Order'}
