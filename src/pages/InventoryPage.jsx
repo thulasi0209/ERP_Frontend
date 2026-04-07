@@ -1,18 +1,28 @@
 import React, { useState, useEffect } from 'react'
 import { Package } from 'lucide-react'
 
-const API_BASE = 'http://127.0.0.1:8000'
+// FIXED: Use environment variable with fallback for localhost development
+const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000'
 
 function InventoryPage() {
   const [inventory, setInventory] = useState([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    // ADDED: Log API configuration on mount
+    console.log('[Debug] InventoryPage Configuration:')
+    console.log('  VITE_API_URL env:', import.meta.env.VITE_API_URL)
+    console.log('  Using API_URL:', API_URL)
+    if (!import.meta.env.VITE_API_URL) {
+      console.warn('[Debug] VITE_API_URL not set. Using fallback:', API_URL)
+    }
     loadInventory()
   }, [])
 
   async function fetchJson(url, options = {}) {
     try {
+      // ADDED: Log full request details
+      console.log(`[Debug] Fetching: ${options.method || 'GET'} ${url}`)
       const response = await fetch(url, options)
       console.log(`[Debug] ${options.method || 'GET'} ${url} - Status: ${response.status}`) // ADDED
       const text = await response.text()
@@ -26,6 +36,13 @@ function InventoryPage() {
 
       return data
     } catch (error) {
+      // ADDED: Better error diagnostics
+      if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
+        console.error('[Debug] Network/CORS error. Check if:')
+        console.error('  1. Backend is running at:', API_URL)
+        console.error('  2. CORS is enabled on backend')
+        console.error('  3. VITE_API_URL is correct in environment')
+      }
       console.error('[Debug] Fetch error:', error.message) // ADDED
       throw new Error(error.message || 'Network error')
     }
@@ -34,7 +51,7 @@ function InventoryPage() {
   async function loadInventory() {
     try {
       setLoading(true)
-      const data = await fetchJson(`${API_BASE}/inventory`)
+      const data = await fetchJson(`${API_URL}/inventory`) // FIXED: Use API_URL instead of API_BASE
       // FIXED: Handle empty array as valid response
       if (Array.isArray(data) && data.length === 0) {
         console.log('[Debug] No inventory items available (empty response)') // ADDED
