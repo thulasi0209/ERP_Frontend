@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from 'react'
 import { Building2, Edit, Trash2, Users } from 'lucide-react'
 
-// Get API URL from environment variable with fallback
-const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000'
+// Get API URL from environment variable (required for backend connectivity)
+const API_URL = import.meta.env.VITE_API_URL;
+if (!API_URL) {
+  console.error('API_URL is not defined - backend calls will fail');
+}
 
 // Test backend connectivity
 async function testBackendConnectivity() {
@@ -45,7 +48,7 @@ function VendorsPage() {
     console.log('  Environment:', import.meta.env.MODE)
     
     if (!import.meta.env.VITE_API_URL) {
-      console.warn('[Debug] VITE_API_URL environment variable is not defined. Using fallback.')
+      console.error('[Debug] VITE_API_URL environment variable is not defined - backend calls will fail')
     }
     
     testBackendConnectivity()

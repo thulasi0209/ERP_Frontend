@@ -1,6 +1,10 @@
 import React, { useState } from 'react'
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000'
+// Get API URL from environment variable (required for backend connectivity)
+const API_URL = import.meta.env.VITE_API_URL;
+if (!API_URL) {
+  console.error('API_URL is not defined - backend calls will fail');
+}
 
 function DebugPage() {
   const [results, setResults] = useState([])
@@ -28,7 +32,10 @@ function DebugPage() {
         url: response.url
       })
     } catch (error) {
-      addResult('Backend Root', 'error', `❌ Unreachable: ${error.message}`, {
+      const msg = error instanceof TypeError && error.message.includes('Failed to fetch')
+        ? `CORS issue or backend unreachable at ${API_URL}`
+        : error.message
+      addResult('Backend Root', 'error', `❌ Failed: ${msg}`, {
         url: API_URL,
         error: error.message
       })
@@ -55,7 +62,10 @@ function DebugPage() {
         })
       }
     } catch (error) {
-      addResult('Vendors GET', 'error', `❌ Network Error: ${error.message}`, {
+      const msg = error instanceof TypeError && error.message.includes('Failed to fetch')
+        ? `CORS issue or backend unreachable`
+        : error.message
+      addResult('Vendors GET', 'error', `❌ Network Error: ${msg}`, {
         error: error.message
       })
     }
@@ -81,7 +91,10 @@ function DebugPage() {
         })
       }
     } catch (error) {
-      addResult('Orders GET', 'error', `❌ Network Error: ${error.message}`, {
+      const msg = error instanceof TypeError && error.message.includes('Failed to fetch')
+        ? `CORS issue or backend unreachable`
+        : error.message
+      addResult('Orders GET', 'error', `❌ Network Error: ${msg}`, {
         error: error.message
       })
     }
@@ -118,7 +131,10 @@ function DebugPage() {
         })
       }
     } catch (error) {
-      addResult('Orders POST', 'error', `❌ Network Error: ${error.message}`, {
+      const msg = error instanceof TypeError && error.message.includes('Failed to fetch')
+        ? `CORS issue or backend unreachable`
+        : error.message
+      addResult('Orders POST', 'error', `❌ Network Error: ${msg}`, {
         error: error.message
       })
     }
@@ -144,7 +160,10 @@ function DebugPage() {
         })
       }
     } catch (error) {
-      addResult('Inventory GET', 'error', `❌ Network Error: ${error.message}`, {
+      const msg = error instanceof TypeError && error.message.includes('Failed to fetch')
+        ? `CORS issue or backend unreachable`
+        : error.message
+      addResult('Inventory GET', 'error', `❌ Network Error: ${msg}`, {
         error: error.message
       })
     }

@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from 'react'
 import { Package, Check } from 'lucide-react'
 
-// FIXED: Use environment variable with fallback for localhost development
-const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000'
+// Get API URL from environment variable (required for backend connectivity)
+const API_URL = import.meta.env.VITE_API_URL;
+if (!API_URL) {
+  console.error('API_URL is not defined - backend calls will fail');
+}
 
 function OrdersPage() {
   const [orders, setOrders] = useState([])
@@ -15,7 +18,7 @@ function OrdersPage() {
     console.log('  VITE_API_URL env:', import.meta.env.VITE_API_URL)
     console.log('  Using API_URL:', API_URL)
     if (!import.meta.env.VITE_API_URL) {
-      console.warn('[Debug] VITE_API_URL not set. Using fallback:', API_URL)
+      console.error('[Debug] VITE_API_URL is not defined - backend calls will fail')
     }
     
     // TEST: Verify backend connectivity
@@ -63,6 +66,11 @@ function OrdersPage() {
 
       return data
     } catch (error) {
+      if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
+        const corsMsg = `Possible CORS issue or backend unreachable at ${API_URL}`
+        console.error('[Debug]', corsMsg, error.message)
+        throw new Error(corsMsg)
+      }
       const errorMsg = error instanceof Error ? error.message : String(error)
       console.error(`[Debug] Fetch Error: ${errorMsg}`)
       throw new Error(errorMsg)

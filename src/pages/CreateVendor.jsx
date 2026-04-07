@@ -1,5 +1,11 @@
 import React, { useState } from 'react';
 
+// Get API URL from environment variable (required for backend connectivity)
+const API_URL = import.meta.env.VITE_API_URL;
+if (!API_URL) {
+  console.error('API_URL is not defined - backend calls will fail');
+}
+
 const CreateVendor = () => {
   const [formData, setFormData] = useState({
     name: '',
@@ -39,22 +45,35 @@ const CreateVendor = () => {
     setLoading(true);
     setMessage('');
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/vendors`, {
+      const url = `${API_URL}/vendors`;
+      console.log('[Debug] POST Request to:', url);
+      const response = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData)
       });
-      const data = await response.json();
-      console.log('Response:', data);
+      console.log('[Debug] Response Status:', response.status);
+      
+      const text = await response.text();
+      const data = text ? JSON.parse(text) : null;
+      
       if (response.ok) {
+        console.log('[Debug] Vendor created successfully');
         setFormData({ name: '', email: '', phone: '', address: '' });
         setMessage('Vendor created successfully');
       } else {
-        setMessage(data.message || 'Failed to create vendor');
+        const errorMsg = data?.message || data?.detail || 'Failed to create vendor';
+        console.error('[Debug] API Error:', response.status, errorMsg);
+        setMessage(errorMsg);
       }
     } catch (error) {
-      console.error('Error:', error);
-      setMessage('An error occurred while creating the vendor');
+      if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
+        console.error('[Debug] Possible CORS issue or backend unreachable:', error.message);
+        setMessage('Unable to reach backend - check CORS or network connectivity');
+      } else {
+        console.error('[Debug] Request Error:', error.message);
+        setMessage('An error occurred while creating the vendor');
+      }
     } finally {
       setLoading(false);
     }
