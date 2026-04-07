@@ -22,30 +22,53 @@ function OrdersPage() {
 
   async function fetchJson(url, options = {}) {
     try {
-      // ADDED: Log full request details
-      console.log(`[Debug] Fetching: ${options.method || 'GET'} ${url}`)
+      const method = options.method || 'GET'
+      console.log(`[Debug] Fetching: ${method} ${url}`)
+      console.log('[Debug] Headers:', options.headers)
+      console.log('[Debug] Body:', options.body)
+      
       const response = await fetch(url, options)
-      console.log(`[Debug] ${options.method || 'GET'} ${url} - Status: ${response.status}`) // ADDED
+      console.log(`[Debug] Response Status: ${response.status} ${response.statusText}`)
+      console.log('[Debug] Response Headers:', {
+        'content-type': response.headers.get('content-type'),
+        'content-length': response.headers.get('content-length')
+      })
+      
       const text = await response.text()
-      const data = text ? JSON.parse(text) : null
-      console.log('[Debug] Response data:', data) // ADDED
+      console.log('[Debug] Raw Response Text:', text)
+      
+      let data = null
+      if (text) {
+        try {
+          data = JSON.parse(text)
+        } catch (jsonError) {
+          console.error('[Debug] JSON parse error:', jsonError.message)
+          console.error('[Debug] Text was:', text)
+          data = text
+        }
+      }
+      console.log('[Debug] Parsed Response data:', data)
 
       if (!response.ok) {
-        const errorMessage = data?.detail || data?.message || response.statusText
-        throw new Error(errorMessage || 'Server error')
+        const errorMessage = data?.detail || data?.message || data?.error || response.statusText || 'Server error'
+        console.error('[Debug] API Error Response:', { status: response.status, message: errorMessage })
+        throw new Error(errorMessage)
       }
 
       return data
     } catch (error) {
-      // ADDED: Better error diagnostics
-      if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
-        console.error('[Debug] Network/CORS error. Check if:')
-        console.error('  1. Backend is running at:', API_URL)
-        console.error('  2. CORS is enabled on backend')
-        console.error('  3. VITE_API_URL is correct in environment')
+      console.error('[Debug] Catch block error:', error)
+      
+      if (error instanceof TypeError) {
+        console.error('[Debug] TypeError - Network/CORS Issue Detected!')
+        console.error('[Debug] Troubleshooting:')
+        console.error('  ❌ 1. Is backend running at:', API_URL)
+        console.error('  ❌ 2. Check backend CORS settings')
+        console.error('  ❌ 3. Verify VITE_API_URL environment variable')
+        console.error('[Debug] Error message:', error.message)
       }
-      console.error('[Debug] Fetch error:', error.message) // ADDED
-      throw new Error(error.message || 'Network error')
+      
+      throw error
     }
   }
 
