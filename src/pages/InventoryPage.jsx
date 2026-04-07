@@ -7,6 +7,7 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000'
 function InventoryPage() {
   const [inventory, setInventory] = useState([])
   const [loading, setLoading] = useState(true)
+  const [readItems, setReadItems] = useState({}) // ADDED: Track read status for each item
 
   useEffect(() => {
     // ADDED: Log API configuration on mount
@@ -77,12 +78,21 @@ function InventoryPage() {
         console.log('[Debug] No inventory items available (empty response)') // ADDED
       }
       setInventory(data || [])
+      setReadItems({}) // ADDED: Reset read status when inventory loads
     } catch (error) {
       console.error('[Debug] loadInventory error:', error.message) // ADDED
       alert(`Unable to load inventory: ${error.message}`)
     } finally {
       setLoading(false)
     }
+  }
+
+  // ADDED: Toggle read status for an item
+  const toggleReadStatus = (itemId) => {
+    setReadItems(prev => ({
+      ...prev,
+      [itemId]: !prev[itemId]
+    }))
   }
 
   return (
@@ -114,18 +124,37 @@ function InventoryPage() {
             {inventory.map((item, index) => {
               const itemName = item?.item_name || item?.name || item?.productName || 'Unknown Item'
               const quantity = item?.quantity || 0
+              const isRead = readItems[item.id] || false // ADDED: Get read status
 
               return (
                 <li
                   key={item.id || index}
                   className="list-item"
-                  style={{animationDelay: `${index * 0.05}s`}}
+                  style={{
+                    animationDelay: `${index * 0.05}s`,
+                    // ADDED: Visual styling for read status
+                    backgroundColor: isRead ? 'rgba(16, 185, 129, 0.1)' : 'transparent',
+                    opacity: isRead ? 0.85 : 1,
+                    transition: 'all 0.3s ease'
+                  }}
                 >
                   <div className="item-row">
                     <div style={{display: 'flex', alignItems: 'center', gap: '12px', flex: 1, minWidth: 0}}>
-                      <Package size={20} style={{color: '#60a5fa', flexShrink: 0}} />
-                      <span className="item-title" style={{wordBreak: 'break-word'}}>
+                      <Package size={20} style={{
+                        color: isRead ? '#10b981' : '#60a5fa', // ADDED: Color change for read status
+                        flexShrink: 0,
+                        transition: 'color 0.3s ease'
+                      }} />
+                      <span className="item-title" style={{
+                        wordBreak: 'break-word',
+                        // ADDED: Text styling for read status
+                        textDecoration: isRead ? 'underline' : 'none',
+                        color: isRead ? '#cbd5e1' : '#e5e7eb',
+                        transition: 'all 0.3s ease'
+                      }}>
                         {itemName}
+                        {/* ADDED: Read status badge */}
+                        {isRead && <span style={{marginLeft: '8px', fontSize: '0.75rem', color: '#10b981', fontWeight: 'bold'}}>✓ Read</span>}
                       </span>
                     </div>
                     <span style={{
@@ -140,6 +169,27 @@ function InventoryPage() {
                     }}>
                       Qty: {quantity}
                     </span>
+                    {/* ADDED: Toggle read button */}
+                    <button
+                      onClick={() => toggleReadStatus(item.id)}
+                      style={{
+                        marginLeft: '12px',
+                        padding: '6px 12px',
+                        fontSize: '0.875rem',
+                        backgroundColor: isRead ? '#10b981' : '#6b7280',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '6px',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s ease',
+                        flexShrink: 0,
+                        fontWeight: '500'
+                      }}
+                      onMouseOver={(e) => e.target.style.opacity = '0.8'}
+                      onMouseOut={(e) => e.target.style.opacity = '1'}
+                    >
+                      {isRead ? '✓ Mark Unread' : '◯ Mark Read'}
+                    </button>
                   </div>
                 </li>
               )
