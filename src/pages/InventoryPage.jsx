@@ -14,8 +14,10 @@ function InventoryPage() {
   async function fetchJson(url, options = {}) {
     try {
       const response = await fetch(url, options)
+      console.log(`[Debug] ${options.method || 'GET'} ${url} - Status: ${response.status}`) // ADDED
       const text = await response.text()
       const data = text ? JSON.parse(text) : null
+      console.log('[Debug] Response data:', data) // ADDED
 
       if (!response.ok) {
         const errorMessage = data?.detail || data?.message || response.statusText
@@ -24,6 +26,7 @@ function InventoryPage() {
 
       return data
     } catch (error) {
+      console.error('[Debug] Fetch error:', error.message) // ADDED
       throw new Error(error.message || 'Network error')
     }
   }
@@ -32,8 +35,13 @@ function InventoryPage() {
     try {
       setLoading(true)
       const data = await fetchJson(`${API_BASE}/inventory`)
-      setInventory(data)
+      // FIXED: Handle empty array as valid response
+      if (Array.isArray(data) && data.length === 0) {
+        console.log('[Debug] No inventory items available (empty response)') // ADDED
+      }
+      setInventory(data || [])
     } catch (error) {
+      console.error('[Debug] loadInventory error:', error.message) // ADDED
       alert(`Unable to load inventory: ${error.message}`)
     } finally {
       setLoading(false)
