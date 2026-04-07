@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Link, useLocation } from 'react-router-do
 import VendorsPage from './pages/VendorsPage'
 import OrdersPage from './pages/OrdersPage'
 import InventoryPage from './pages/InventoryPage'
+import DebugPage from './pages/DebugPage'
 import './App.css'
 
 function Navbar() {
@@ -38,6 +39,15 @@ function Navbar() {
             Inventory
           </Link>
         </li>
+        <li>
+          <Link 
+            to="/debug" 
+            className={`nav-link ${isActive('/debug') ? 'active' : ''}`}
+            style={{ color: '#fbbf24' }}
+          >
+            Debug 🔧
+          </Link>
+        </li>
       </ul>
     </nav>
   )
@@ -54,6 +64,7 @@ function App() {
             <Route path="/vendors" element={<VendorsPage />} />
             <Route path="/orders" element={<OrdersPage />} />
             <Route path="/inventory" element={<InventoryPage />} />
+            <Route path="/debug" element={<DebugPage />} />
           </Routes>
         </main>
       </div>
