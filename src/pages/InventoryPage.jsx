@@ -37,52 +37,34 @@ function InventoryPage() {
   async function fetchJson(url, options = {}) {
     try {
       const method = options.method || 'GET'
-      console.log(`[Debug] Fetching: ${method} ${url}`)
-      console.log('[Debug] Headers:', options.headers)
-      console.log('[Debug] Body:', options.body)
+      console.log(`[Debug] Request: ${method} ${url}`)
       
       const response = await fetch(url, options)
-      console.log(`[Debug] Response Status: ${response.status} ${response.statusText}`)
-      console.log('[Debug] Response Headers:', {
-        'content-type': response.headers.get('content-type'),
-        'content-length': response.headers.get('content-length')
-      })
-      
       const text = await response.text()
-      console.log('[Debug] Raw Response Text:', text)
+      
+      console.log(`[Debug] Response Status: ${response.status}`)
+      console.log('[Debug] Response Text:', text.substring(0, 300))
       
       let data = null
-      if (text) {
+      if (text && text.trim()) {
         try {
           data = JSON.parse(text)
-        } catch (jsonError) {
-          console.error('[Debug] JSON parse error:', jsonError.message)
-          console.error('[Debug] Text was:', text)
-          data = text
+        } catch (jsonErr) {
+          console.error('[Debug] JSON Parse Error:', jsonErr.message)
+          throw new Error('Invalid response from server')
         }
       }
-      console.log('[Debug] Parsed Response data:', data)
 
       if (!response.ok) {
-        const errorMessage = data?.detail || data?.message || data?.error || response.statusText || 'Server error'
-        console.error('[Debug] API Error Response:', { status: response.status, message: errorMessage })
-        throw new Error(errorMessage)
+        const msg = data?.detail || data?.message || data?.error || `HTTP ${response.status}`
+        throw new Error(msg)
       }
 
       return data
     } catch (error) {
-      console.error('[Debug] Catch block error:', error)
-      
-      if (error instanceof TypeError) {
-        console.error('[Debug] TypeError - Network/CORS Issue Detected!')
-        console.error('[Debug] Troubleshooting:')
-        console.error('  ❌ 1. Is backend running at:', API_URL)
-        console.error('  ❌ 2. Check backend CORS settings')
-        console.error('  ❌ 3. Verify VITE_API_URL environment variable')
-        console.error('[Debug] Error message:', error.message)
-      }
-      
-      throw error
+      const errorMsg = error instanceof Error ? error.message : String(error)
+      console.error(`[Debug] Fetch Error: ${errorMsg}`)
+      throw new Error(errorMsg)
     }
   }
 
