@@ -17,8 +17,23 @@ function OrdersPage() {
     if (!import.meta.env.VITE_API_URL) {
       console.warn('[Debug] VITE_API_URL not set. Using fallback:', API_URL)
     }
+    
+    // TEST: Verify backend connectivity
+    testBackendConnection()
     loadOrders()
   }, [])
+
+  // NEW: Test backend connectivity
+  async function testBackendConnection() {
+    console.log('[Debug] Testing backend connectivity...')
+    try {
+      const response = await fetch(`${API_URL}/`)
+      console.log('[Debug] ✅ Backend is reachable! Status:', response.status)
+    } catch (error) {
+      console.error('[Debug] ❌ Backend unreachable at:', API_URL)
+      console.error('[Debug] Error:', error.message)
+    }
+  }
 
   async function fetchJson(url, options = {}) {
     try {
