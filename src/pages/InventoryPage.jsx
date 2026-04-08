@@ -111,10 +111,19 @@ function InventoryPage() {
   // ENHANCED: Persistent mark as read with backend API call and localStorage fallback
   const markAsRead = async (itemId) => {
     try {
+      // ADDED: Validate itemId
+      if (!itemId || itemId <= 0) {
+        console.error(`[Debug] Invalid itemId: ${itemId}`)
+        alert('Error: Invalid item ID')
+        return
+      }
+
       console.log(`[Debug] Marking item ${itemId} as read...`)
+      const endpoint = `${API_URL}/inventory/${itemId}/mark-read`
+      console.log(`[Debug] Calling endpoint: ${endpoint}`)
       
       // ENHANCED: Call backend API to persist read status
-      const updatedItem = await fetchJson(`${API_URL}/inventory/${itemId}/mark-read`, {
+      const updatedItem = await fetchJson(endpoint, {
         method: 'PUT',
       })
       
