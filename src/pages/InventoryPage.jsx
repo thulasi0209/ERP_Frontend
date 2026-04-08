@@ -10,7 +10,8 @@ if (!API_URL) {
 function InventoryPage() {
   const [inventory, setInventory] = useState([])
   const [loading, setLoading] = useState(true)
-  const [readItems, setReadItems] = useState({}) // ADDED: Track read status for each item
+  const [readItems, setReadItems] = useState({}) // ENHANCED: Track read status from backend
+  const STORAGE_KEY = 'inventory_read_status' // ADDED: LocalStorage key for persistence
 
   useEffect(() => {
     // ADDED: Log API configuration on mount
@@ -86,7 +87,19 @@ function InventoryPage() {
         console.log('[Debug] No inventory items available (empty response)') // ADDED
       }
       setInventory(data || [])
-      setReadItems({}) // ADDED: Reset read status when inventory loads
+      
+      // ENHANCED: Build read status map from backend is_read field
+      const readStatusMap = {}
+      if (Array.isArray(data)) {
+        data.forEach(item => {
+          const itemId = item.id
+          // ENHANCED: Use backend is_read field as source of truth
+          readStatusMap[itemId] = item.is_read === 1 || item.is_read === true
+          console.log(`[Debug] Item ${itemId} (${item.item_name}): is_read=${item.is_read}`)
+        })
+      }
+      setReadItems(readStatusMap)
+      console.log('[Debug] Read status map loaded:', readStatusMap)
     } catch (error) {
       console.error('[Debug] loadInventory error:', error.message) // ADDED
       alert(`Unable to load inventory: ${error.message}`)
@@ -95,12 +108,44 @@ function InventoryPage() {
     }
   }
 
-  // ADDED: Toggle read status for an item
-  const toggleReadStatus = (itemId) => {
-    setReadItems(prev => ({
-      ...prev,
-      [itemId]: !prev[itemId]
-    }))
+  // ENHANCED: Persistent mark as read with backend API call and localStorage fallback
+  const markAsRead = async (itemId) => {
+    try {
+      console.log(`[Debug] Marking item ${itemId} as read...`)
+      
+      // ENHANCED: Call backend API to persist read status
+      const updatedItem = await fetchJson(`${API_URL}/inventory/${itemId}/mark-read`, {
+        method: 'PUT',
+      })
+      
+      // ENHANCED: Update local state immediately with backend response
+      setReadItems(prev => ({
+        ...prev,
+        [itemId]: updatedItem.is_read === 1 || updatedItem.is_read === true
+      }))
+      
+      // ADDED: Save to localStorage as backup persistence
+      const storageData = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}')
+      storageData[itemId] = updatedItem.is_read === 1 || updatedItem.is_read === true
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(storageData))
+      
+      console.log(`[Debug] Item ${itemId} marked as read. Status: ${updatedItem.is_read}`)
+    } catch (error) {
+      console.error(`[Debug] Error marking item as read:`, error.message)
+      
+      // ADDED: Fallback to localStorage if backend fails
+      console.log('[Debug] Falling back to localStorage only')
+      setReadItems(prev => ({
+        ...prev,
+        [itemId]: !prev[itemId]
+      }))
+      
+      const storageData = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}')
+      storageData[itemId] = !storageData[itemId]
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(storageData))
+      
+      alert(`Read status toggled (localStorage only): ${error.message}`)
+    }
   }
 
   return (
@@ -132,7 +177,9 @@ function InventoryPage() {
             {inventory.map((item, index) => {
               const itemName = item?.item_name || item?.name || item?.productName || 'Unknown Item'
               const quantity = item?.quantity || 0
-              const isRead = readItems[item.id] || false // ADDED: Get read status
+              // ENHANCED: Get read status from state (backend is source of truth)
+              const isRead = readItems[item.id] || false
+              const itemId = item.id
 
               return (
                 <li
@@ -140,46 +187,75 @@ function InventoryPage() {
                   className="list-item"
                   style={{
                     animationDelay: `${index * 0.05}s`,
-                    // ADDED: Visual styling for read status
-                    backgroundColor: isRead ? 'rgba(16, 185, 129, 0.1)' : 'transparent',
-                    opacity: isRead ? 0.85 : 1,
-                    transition: 'all 0.3s ease'
+                    // ENHANCED: Professional styling for read status with smooth transition
+                    backgroundColor: isRead ? 'rgba(16, 185, 129, 0.08)' : 'transparent',
+                    borderLeft: isRead ? '4px solid #10b981' : '4px solid #6b7280',
+                    opacity: isRead ? 0.9 : 1,
+                    transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)'
                   }}
                 >
                   <div className="item-row">
                     <div style={{display: 'flex', alignItems: 'center', gap: '12px', flex: 1, minWidth: 0}}>
-                      <Package size={20} style={{
-                        color: isRead ? '#10b981' : '#60a5fa', // ADDED: Color change for read status
-                        flexShrink: 0,
-                        transition: 'color 0.3s ease'
-                      }} />
+                      {/* ENHANCED: Show double tick for read items */}
+                      {isRead && (
+                        <span 
+                          style={{
+                            color: '#10b981',
+                            fontWeight: 'bold',
+                            fontSize: '1.1rem',
+                            lineHeight: '1',
+                            flexShrink: 0,
+                            animation: 'fadeIn 0.5s ease-out'
+                          }} 
+                          title="Item acknowledged"
+                        >
+                          ✔✔
+                        </span>
+                      )}
                       <span className="item-title" style={{
                         wordBreak: 'break-word',
-                        // ADDED: Text styling for read status
-                        textDecoration: isRead ? 'underline' : 'none',
-                        color: isRead ? '#cbd5e1' : '#e5e7eb',
-                        transition: 'all 0.3s ease'
+                        // ENHANCED: Professional text styling for read status
+                        textDecoration: isRead ? 'line-through' : 'none',
+                        color: isRead ? '#9ca3af' : '#e5e7eb',
+                        opacity: isRead ? 0.9 : 1,
+                        transition: 'all 0.4s ease'
                       }}>
                         {itemName}
-                        {/* ADDED: Read status badge */}
-                        {isRead && <span style={{marginLeft: '8px', fontSize: '0.75rem', color: '#10b981', fontWeight: 'bold'}}>✓ Read</span>}
                       </span>
                     </div>
                     <span style={{
-                      color: '#cbd5e1',
+                      color: isRead ? '#6b7280' : '#cbd5e1',
                       fontSize: '14px',
-                      background: 'rgba(31, 41, 55, 0.8)',
+                      background: isRead ? 'rgba(16, 185, 129, 0.15)' : 'rgba(31, 41, 55, 0.8)',
                       padding: '6px 12px',
                       borderRadius: '8px',
                       marginLeft: '16px',
                       flexShrink: 0,
-                      whiteSpace: 'nowrap'
+                      whiteSpace: 'nowrap',
+                      fontWeight: isRead ? 600 : 500,
+                      transition: 'all 0.3s ease'
                     }}>
                       Qty: {quantity}
                     </span>
-                    {/* ADDED: Toggle read button */}
+                    {/* ENHANCED: Status badge showing read/unread state */}
+                    {isRead && (
+                      <span style={{
+                        marginLeft: '8px',
+                        padding: '4px 10px',
+                        fontSize: '0.75rem',
+                        backgroundColor: '#10b981',
+                        color: 'white',
+                        borderRadius: '4px',
+                        fontWeight: 'bold',
+                        flexShrink: 0,
+                        animation: 'fadeIn 0.5s ease-out'
+                      }}>
+                        ✔✔ Read
+                      </span>
+                    )}
+                    {/* ENHANCED: Toggle read button with improved styling */}
                     <button
-                      onClick={() => toggleReadStatus(item.id)}
+                      onClick={() => markAsRead(itemId)}
                       style={{
                         marginLeft: '12px',
                         padding: '6px 12px',
@@ -189,14 +265,29 @@ function InventoryPage() {
                         border: 'none',
                         borderRadius: '6px',
                         cursor: 'pointer',
-                        transition: 'all 0.2s ease',
+                        transition: 'all 0.3s ease',
                         flexShrink: 0,
-                        fontWeight: '500'
+                        fontWeight: '600',
+                        opacity: 1,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '4px'
                       }}
-                      onMouseOver={(e) => e.target.style.opacity = '0.8'}
-                      onMouseOut={(e) => e.target.style.opacity = '1'}
+                      onMouseOver={(e) => {
+                        if (!isRead) {
+                          e.target.style.backgroundColor = '#5a6268'
+                          e.target.style.transform = 'translateY(-1px)'
+                        }
+                      }}
+                      onMouseOut={(e) => {
+                        if (!isRead) {
+                          e.target.style.backgroundColor = '#6b7280'
+                          e.target.style.transform = 'translateY(0)'
+                        }
+                      }}
+                      title={isRead ? 'Click to mark as unread' : 'Click to mark as read'}
                     >
-                      {isRead ? '✓ Mark Unread' : '◯ Mark Read'}
+                      {isRead ? '✔✔ Unread' : '◯ Mark Read'}
                     </button>
                   </div>
                 </li>
