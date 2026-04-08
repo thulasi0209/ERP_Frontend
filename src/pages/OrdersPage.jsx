@@ -127,16 +127,20 @@ function OrdersPage() {
 
   async function markReceived(orderId) {
     try {
-      await fetchJson(`${API_URL}/orders/${orderId}/receive`, {
+      const updatedOrder = await fetchJson(`${API_URL}/orders/${orderId}/receive`, {
         method: 'POST',
       })
-      alert('Order marked as received.')
-      await loadOrders()
+      // ENHANCED: Update state immediately without full page reload
+      setOrders(orders.map(o => o.id === orderId ? updatedOrder : o))
+      console.log('[Debug] Order marked as received successfully')
     } catch (error) {
-      // ADDED: Handle "already received" error gracefully
-      if (error.message.includes('already received') || error.message.includes('Already' )) {
+      // ENHANCED: More granular error handling
+      if (error.message.includes('already received') || error.message.includes('Already')) {
         console.log('[Debug] Order already received, reloading...')
-        await loadOrders() // Refresh to show correct state
+        await loadOrders()
+      } else if (error.message.includes('not found')) {
+        alert(`Order not found: ${error.message}`)
+        await loadOrders()
       } else {
         alert(`Failed to mark order received: ${error.message}`)
       }
@@ -217,9 +221,9 @@ function OrdersPage() {
           ) : (
             <ul className="list">
               {orders.map((order, index) => {
-                const status = order.received ? 'received' : 'pending'
-                // ADDED: Visual styling for received orders
-                const isReceived = order.received
+                // ENHANCED: Use status field from backend (case-insensitive)
+                const isReceived = order.status && order.status.toLowerCase() === "received"
+                const statusDisplay = isReceived ? 'Received' : 'Pending'
                 
                 return (
                   <li 
@@ -227,44 +231,48 @@ function OrdersPage() {
                     className="list-item" 
                     style={{
                       animationDelay: `${index * 0.05}s`,
-                      // ADDED: Green background tint for received orders
+                      // ENHANCED: Smooth status-based styling with transition
                       backgroundColor: isReceived ? 'rgba(16, 185, 129, 0.08)' : 'transparent',
-                      borderLeft: isReceived ? '3px solid #10b981' : '3px solid transparent',
-                      transition: 'all 0.3s ease'
+                      borderLeft: isReceived ? '4px solid #10b981' : '4px solid #6b7280',
+                      transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)'
                     }}
                   >
                     <div className="item-row">
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1 }}>
-                        {/* ADDED: Double tick for received orders */}
+                        {/* ENHANCED: Show professional double tick for received status */}
                         {isReceived && (
-                          <span style={{
-                            color: '#10b981',
-                            fontWeight: 'bold',
-                            fontSize: '1.2rem'
-                          }} title="Order received">
-                            ✅
+                          <span 
+                            style={{
+                              color: '#10b981',
+                              fontWeight: 'bold',
+                              fontSize: '1.1rem',
+                              lineHeight: '1',
+                              animation: 'fadeIn 0.5s ease-out'
+                            }} 
+                            title="Order received - all quantities added to inventory"
+                          >
+                            ✔✔
                           </span>
                         )}
                         <div>
                           <div className="item-title" style={{
-                            // ADDED: Text styling for received orders
-                            color: isReceived ? '#cbd5e1' : '#e5e7eb',
+                            color: isReceived ? '#9ca3af' : '#e5e7eb',
                             textDecoration: isReceived ? 'line-through' : 'none',
-                            opacity: isReceived ? 0.9 : 1
+                            opacity: isReceived ? 0.85 : 1,
+                            transition: 'all 0.4s ease'
                           }}>
                             {order.item_name}
                           </div>
                           <div className="item-meta" style={{
-                            color: isReceived ? '#9ca3af' : '#6b7280'
+                            color: isReceived ? '#6b7280' : '#6b7280'
                           }}>
-                            Vendor ID: {order.vendor_id} · Quantity: {order.quantity} {/* ADDED: Display unit if available */}
-                            {order.unit && ` ${order.unit}`}
+                            Vendor ID: {order.vendor_id} · Quantity: {order.quantity} {order.unit && ` ${order.unit}`}
                           </div>
                         </div>
                       </div>
-                      {/* ADDED: Enhanced badge styling */}
+                      {/* ENHANCED: Status badge with color coding */}
                       <span 
-                        className={`badge ${status}`}
+                        className={`badge ${statusDisplay.toLowerCase()}`}
                         style={{
                           backgroundColor: isReceived ? '#10b981' : '#ef4444',
                           color: 'white',
@@ -272,41 +280,56 @@ function OrdersPage() {
                           borderRadius: '6px',
                           fontSize: '0.875rem',
                           fontWeight: '600',
-                          transition: 'all 0.3s ease'
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                          transition: 'all 0.4s ease',
+                          letterSpacing: '0.5px'
                         }}
                       >
-                        {/* ADDED: Double check mark for received */}
-                        {isReceived ? '✅ Received' : '⏳ Pending'}
+                        {isReceived ? '✔✔' : '⏳'} {statusDisplay}
                       </span>
                     </div>
-                    <div className="item-row">
+                    <div className="item-row" style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center'
+                    }}>
                       <span className="item-meta">Order ID: {order.id}</span>
-                      {!order.received && (
+                      {/* ENHANCED: Conditional rendering of button vs double tick icon */}
+                      {!isReceived ? (
                         <button
                           className="action-button"
                           onClick={() => markReceived(order.id)}
+                          style={{
+                            transition: 'all 0.3s ease',
+                            cursor: 'pointer'
+                          }}
+                          title="Mark this order as received and update inventory"
                         >
                           <Check size={16} />
                           Mark Received
                         </button>
-                      )}
-                      {/* ADDED: Verify button for already received orders */}
-                      {isReceived && (
-                        <button
+                      ) : (
+                        <div
                           style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '6px',
                             padding: '6px 12px',
-                            fontSize: '0.875rem',
                             backgroundColor: '#10b981',
                             color: 'white',
-                            border: 'none',
                             borderRadius: '6px',
-                            cursor: 'default',
-                            opacity: 0.7,
-                            fontWeight: '500'
+                            fontSize: '0.875rem',
+                            fontWeight: '600',
+                            opacity: 0.9,
+                            animation: 'fadeIn 0.5s ease-out',
+                            pointerEvents: 'none'
                           }}
+                          title="Received - inventory has been updated"
                         >
-                          ✅ Verified
-                        </button>
+                          ✔✔ Received
+                        </div>
                       )}
                     </div>
                   </li>
