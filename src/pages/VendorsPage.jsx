@@ -90,11 +90,12 @@ function VendorsPage() {
     setError('')
     try {
       const data = await fetchJson(`${API_URL}/vendors`)
-      setVendors(data)
+      setVendors(Array.isArray(data) ? data : [])
     } catch (error) {
       const errorMsg = `Unable to load vendors: ${error.message}`
       console.error('[Debug]', errorMsg)
       setError(errorMsg)
+      setVendors([])
     }
   }
 
@@ -206,7 +207,7 @@ function VendorsPage() {
             </div>
           ) : (
             <ul className="list">
-              {vendors.map((vendor, index) => (
+              {(Array.isArray(vendors) ? vendors : []).map((vendor, index) => (
                 <li key={vendor.id} className="list-item" style={{animationDelay: `${index * 0.05}s`}}>
                   <div className="item-row">
                     <div className="vendor-info">

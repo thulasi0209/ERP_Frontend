@@ -86,7 +86,7 @@ function InventoryPage() {
       if (Array.isArray(data) && data.length === 0) {
         console.log('[Debug] No inventory items available (empty response)') // ADDED
       }
-      setInventory(data || [])
+      setInventory(Array.isArray(data) ? data : [])
       
       // ENHANCED: Build read status map from backend is_read field
       const readStatusMap = {}
@@ -103,6 +103,7 @@ function InventoryPage() {
     } catch (error) {
       console.error('[Debug] loadInventory error:', error.message) // ADDED
       alert(`Unable to load inventory: ${error.message}`)
+      setInventory([])
     } finally {
       setLoading(false)
     }
@@ -183,7 +184,7 @@ function InventoryPage() {
           </div>
         ) : (
           <ul className="list">
-            {inventory.map((item, index) => {
+            {(Array.isArray(inventory) ? inventory : []).map((item, index) => {
               const itemName = item?.item_name || item?.name || item?.productName || 'Unknown Item'
               const quantity = item?.quantity || 0
               // ENHANCED: Get read status from state (backend is source of truth)

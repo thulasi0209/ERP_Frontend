@@ -84,10 +84,11 @@ function OrdersPage() {
       if (Array.isArray(data) && data.length === 0) {
         console.log('[Debug] No orders available (empty response)') // ADDED
       }
-      setOrders(data || [])
+      setOrders(Array.isArray(data) ? data : [])
     } catch (error) {
       console.error('[Debug] loadOrders error:', error.message) // ADDED
       alert(`Unable to load orders: ${error.message}`)
+      setOrders([])
     }
   }
 
@@ -220,7 +221,7 @@ function OrdersPage() {
             </div>
           ) : (
             <ul className="list">
-              {orders.map((order, index) => {
+              {(Array.isArray(orders) ? orders : []).map((order, index) => {
                 // ENHANCED: Use status field from backend (case-insensitive)
                 const isReceived = order.status && order.status.toLowerCase() === "received"
                 const statusDisplay = isReceived ? 'Received' : 'Pending'
