@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 
 // Get API URL from environment variable (required for backend connectivity)
-const API_URL = import.meta.env.VITE_API_URL;
+const RAW_API_URL = import.meta.env.VITE_API_URL || '';
+const API_URL = RAW_API_URL.replace(/\/api\/?$/, '').replace(/\/+$/, '');
 if (!API_URL) {
   console.error('API_URL is not defined - backend calls will fail');
 }
