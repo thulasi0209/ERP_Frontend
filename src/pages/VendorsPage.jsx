@@ -189,12 +189,12 @@ function VendorsPage() {
               required
             />
           </label>
-          <button type="submit" className="primary-button" disabled={loading}>
+          <button type="submit" className="btn-primary" disabled={loading}>
             {loading ? 'Creating...' : '+ Create Vendor'}
           </button>
         </form>
 
-        <div>
+        <div className="card">
           <h3 style={{fontSize: '1.125rem', fontWeight: 600, marginBottom: '1rem', color: '#cbd5e1'}}>
             Vendor List
           </h3>

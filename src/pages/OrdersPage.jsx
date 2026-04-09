@@ -203,12 +203,12 @@ function OrdersPage() {
               <option value="pieces">pieces</option>
             </select>
           </label>
-          <button type="submit" className="primary-button" disabled={loading}>
+          <button type="submit" className="btn-primary" disabled={loading}>
             {loading ? 'Creating...' : '+ Create Order'}
           </button>
         </form>
 
-        <div>
+        <div className="card">
           <h3 style={{fontSize: '1.125rem', fontWeight: 600, marginBottom: '1rem', color: '#cbd5e1'}}>
             Order List
           </h3>
@@ -273,23 +273,8 @@ function OrdersPage() {
                         </div>
                       </div>
                       {/* ENHANCED: Status badge with color coding */}
-                      <span 
-                        className={`badge ${statusDisplay.toLowerCase()}`}
-                        style={{
-                          backgroundColor: isReceived ? '#10b981' : '#ef4444',
-                          color: 'white',
-                          padding: '6px 12px',
-                          borderRadius: '6px',
-                          fontSize: '0.875rem',
-                          fontWeight: '600',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '4px',
-                          transition: 'all 0.4s ease',
-                          letterSpacing: '0.5px'
-                        }}
-                      >
-                        {isReceived ? '✔✔' : '⏳'} {statusDisplay}
+                      <span className={`badge ${isReceived ? 'received' : 'pending'}`}>
+                        {isReceived ? '✔✔ Received' : 'Pending'}
                       </span>
                     </div>
                     <div className="item-row" style={{
@@ -301,37 +286,17 @@ function OrdersPage() {
                       {/* ENHANCED: Conditional rendering of button vs double tick icon */}
                       {!isReceived ? (
                         <button
-                          className="action-button"
+                          className="btn-primary"
                           onClick={() => markReceived(order.id)}
-                          style={{
-                            transition: 'all 0.3s ease',
-                            cursor: 'pointer'
-                          }}
                           title="Mark this order as received and update inventory"
                         >
-                          <Check size={16} />
+                          <Check size={16} style={{display: 'inline-block', verticalAlign: 'middle', marginRight: '4px'}} />
                           Mark Received
                         </button>
                       ) : (
-                        <div
-                          style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '6px',
-                            padding: '6px 12px',
-                            backgroundColor: '#10b981',
-                            color: 'white',
-                            borderRadius: '6px',
-                            fontSize: '0.875rem',
-                            fontWeight: '600',
-                            opacity: 0.9,
-                            animation: 'fadeIn 0.5s ease-out',
-                            pointerEvents: 'none'
-                          }}
-                          title="Received - inventory has been updated"
-                        >
+                        <span className="badge received" title="Received - inventory has been updated">
                           ✔✔ Received
-                        </div>
+                        </span>
                       )}
                     </div>
                   </li>
